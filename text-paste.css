@@ -1,6 +1,6 @@
 #root {
     width: 100vw;
-    max-width: 800px;
+    max-width: 400px;
     height: 100vh;
     margin: 0 auto;
     display: grid;
@@ -9,12 +9,6 @@
     "header"
     "messages"
     "input";
-}
-
-@media screen and (max-width: 600px) {
-    #root {
-        max-width: 100vw;
-    }
 }
 
 .classifications {
@@ -51,15 +45,9 @@
 .input {
     grid-row-start: 3;
     grid-row-end: 3;
-    height: 100%;
 }
 
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Roboto', sans-serif;
-}
-
-pre {
-    font-family: 'Roboto', sans-serif;
 }

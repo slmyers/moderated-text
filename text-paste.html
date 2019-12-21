@@ -5,11 +5,9 @@
     <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
     <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="text-paste.css">
     <script src="https://cdn.rawgit.com/visionmedia/page.js/master/page.js"></script>
     <script src="constants.js"></script>
-    <script src="/node_modules/autosize/dist/autosize.min.js"></script>
 </head>
 <body>
 
@@ -17,72 +15,34 @@
         <header class="mdc-top-app-bar header">
             <div class="mdc-top-app-bar__row">
                 <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
-                    <span class="mdc-top-app-bar__title">Censor Text</span>
+                    <span class="mdc-top-app-bar__title">ML Moderated Chat</span>
                 </section>
             </div>
         </header>
-        <div class="messages">
-            <div id="text" contenteditable="true" style="max-width: 100%; max-height: 100%;" rows="20">
-                paste text ontop of this text <i class="material-icons">keyboard_arrow_left</i>
+        <div class="messages"></div>
+        <div class="input mdc-text-field mdc-text-field--outlined">
+            <input type="text" id="tf-outlined" class="mdc-text-field__input">
+            <div class="mdc-notched-outline">
+              <div class="mdc-notched-outline__leading"></div>
+              <div class="mdc-notched-outline__notch">
+                <label for="tf-outlined" class="mdc-floating-label">Your Name</label>
+              </div>
+              <div class="mdc-notched-outline__trailing"></div>
             </div>
-        </div>
-        <button class="input mdc-button" id="btn">
-            <div class="mdc-button__ripple"></div>
-            <i class="material-icons mdc-button__icon" aria-hidden="true">move_to_inbox</i>
-            <span class="mdc-button__label">click to censor</span>
-        </button>
+          </div>
     </div>
 
     <script type="module">
         import {styleMap} from 'https://unpkg.com/lit-html/directives/style-map?module';
         import {html, render, nothing} from 'https://unpkg.com/lit-html?module'
-        //const input = document.querySelector('.mdc-text-field')
-        //mdc.textField.MDCTextField.attachTo(input);
-        //input.addEventListener("keypress", onInput);
-        
-        autosize(document.querySelectorAll('textarea'));
-        const state = (function(ctx) {
-            toxicity.load(enums.THRESHOLD).then(model => ctx._model = model)
-            ctx._textEl = document.getElementById("text")
-            return {
-                get model() {
-                    return ctx._model
-                },
-                get text() {
-                    return ctx._textEl.innerText
-                },
-                set text(txt) {
-                    ctx._textEl.innerText = txt
-                },
-                async translate() {
-                    const t = ctx._textEl.innerText
-                    const targets = [
-                        "\n",
-                        "\t",
-                        ".",
-                        "!",
-                        ","
-                    ]
-                    
-                    const sentences = [t].reduce((accum, item) => {
-                        console.log(accum)
-                        const sentences = accum.map(x => x.split(targets.pop()))
-                        console.log(sentences)
-                        return [...accum, ...sentences]
-                    }, t.split(targets.pop()))
+        const input = document.querySelector('.mdc-text-field')
+        mdc.textField.MDCTextField.attachTo(input);
+        input.addEventListener("keypress", onInput);
+        const messages = []
+        let model = null 
+        toxicity.load(enums.THRESHOLD).then(loadModel)
 
-                }
-            }
-        })({})
-
-        const btn = document.querySelector('.mdc-button')
-        btn.addEventListener("click", async () => {
-            console.log(state.text)
-            await state.translate()
-        })
-        new mdc.ripple.MDCRipple(btn);
-
-        async () => {
+        setInterval(async () => {
             const pendingMessages = messages.filter(m => m.status === enums.PENDING)
             if (
                 pendingMessages.length === 0 || 
@@ -98,12 +58,18 @@
                 m.status = enums.CLASSIFIED
             })
             renderMessages()
-        }
+        }, 250)
 
-        function onClick(e) {
-            console.log(e)
-            console.log(state.text)
-            renderMessages()
+        function onInput(e) {
+            if (e.code === "Enter") {
+                messages.push({
+                    value: e.target.value,
+                    status: enums.PENDING,
+                    classifications: {}
+                })
+                e.target.value = ""
+                renderMessages()
+            }
         }
         function renderMessages() {
             render(messageList_t(), document.querySelector(".messages"))
@@ -121,6 +87,9 @@
                 }
             }
             return html`<div class="classifications">${result}</div>`
+        }
+        function loadModel(resolvedModel) {
+            model = resolvedModel
         }
         function messageList_t() {
             const highlightStyles = { border: "red 1px solid" } 

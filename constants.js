@@ -5,3 +5,4 @@ enums = {
     // turn this down so you don't have type very obscene things
     THRESHOLD: 0.6
 }
+sentenceRegex = /["’]?[A-Z][^.?!]+((?![.?!][’"]?\s["’]?[A-Z][^.?!]).)+[.?!’"]+/
