@@ -1,0 +1,53 @@
+#root {
+    width: 100vw;
+    max-width: 400px;
+    height: 100vh;
+    margin: 0 auto;
+    display: grid;
+    grid-template-rows: [header] 64px [messages] auto [input] 56px;
+    grid-template-areas: 
+    "header"
+    "messages"
+    "input";
+}
+
+.classifications {
+    display: flex;
+    width: 100%;
+}
+
+.classifications > span:not(:first-child) {
+    margin-left: 1em;
+}
+
+.classifications > span {
+    background-color: white;
+    color: black;
+    padding: 5px
+}
+
+.header {
+    grid-row-start: 1;
+    grid-row-end: 1;
+    overflow: hidden;
+    position: sticky;
+}
+
+.messages {
+    grid-row-start: 2;
+    grid-row-end: 2;
+    background-color: #efefef;
+    border-left: solid 1px lightgrey;
+    border-right: solid 1px lightgray;
+    overflow: scroll;
+}
+
+.input {
+    grid-row-start: 3;
+    grid-row-end: 3;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}

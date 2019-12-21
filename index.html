@@ -1,0 +1,118 @@
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/toxicity"></script>
+    <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+    <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="styles.css">
+    <script src="constants.js"></script>
+</head>
+<body>
+
+    <div id="root">
+        <header class="mdc-top-app-bar header">
+            <div class="mdc-top-app-bar__row">
+                <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+                    <span class="mdc-top-app-bar__title">ML Moderated Chat</span>
+                </section>
+            </div>
+        </header>
+        <div class="messages"></div>
+        <div class="input mdc-text-field mdc-text-field--outlined">
+            <input type="text" id="tf-outlined" class="mdc-text-field__input">
+            <div class="mdc-notched-outline">
+              <div class="mdc-notched-outline__leading"></div>
+              <div class="mdc-notched-outline__notch">
+                <label for="tf-outlined" class="mdc-floating-label">Your Name</label>
+              </div>
+              <div class="mdc-notched-outline__trailing"></div>
+            </div>
+          </div>
+    </div>
+
+    <script type="module">
+        import {styleMap} from 'https://unpkg.com/lit-html/directives/style-map?module';
+        import {html, render, nothing} from 'https://unpkg.com/lit-html?module'
+        const input = document.querySelector('.mdc-text-field')
+        mdc.textField.MDCTextField.attachTo(input);
+        input.addEventListener("keypress", onInput);
+        const messages = []
+        let model = null 
+        toxicity.load(enums.THRESHOLD).then(loadModel)
+
+        setInterval(async () => {
+            const pendingMessages = messages.filter(m => m.status === enums.PENDING)
+            if (
+                pendingMessages.length === 0 || 
+                model === null            
+            ) {
+                return
+            }  
+            const classifications = await model.classify(pendingMessages.map(m => m.value))
+            pendingMessages.forEach(m => {
+                for(const c of classifications) {
+                    m.classifications[c.label] = c.results[0].match
+                }
+                m.status = enums.CLASSIFIED
+            })
+            renderMessages()
+        }, 250)
+
+        function onInput(e) {
+            if (e.code === "Enter") {
+                messages.push({
+                    value: e.target.value,
+                    status: enums.PENDING,
+                    classifications: {}
+                })
+                e.target.value = ""
+                renderMessages()
+            }
+        }
+        function renderMessages() {
+            render(messageList_t(), document.querySelector(".messages"))
+        }
+        function classificationSummary(classifications) {
+            if (Object.values(classifications).every(v => !v)) {
+                return nothing
+            }
+            const result = []
+            for (const [key, value] of Object.entries(classifications)) {
+                if (value) {
+                    result.push(html`
+                        <span>${key}</div>
+                    `)
+                }
+            }
+            return html`<div class="classifications">${result}</div>`
+        }
+        function loadModel(resolvedModel) {
+            model = resolvedModel
+        }
+        function messageList_t() {
+            const highlightStyles = { border: "red 1px solid" } 
+            const normalStyles = { backgroundColor: "inherit" }
+            return html`
+                <ul class="mdc-list">
+                    ${messages.map(({value, status, classifications}) => html`
+                        <li style="height: 100px" class="mdc-list-item" tabindex="0">
+                            ${(status === enums.CLASSIFIED) ? 
+                                html`
+                                    <span style=${styleMap(Object.values(classifications).some(Boolean) ? highlightStyles : normalStyles)} class="mdc-list-item__text">
+                                        <span class="mdc-list-item__primary-text">${value}</span>
+                                        <span style="height:" class="mdc-list-item__secondary-text">
+                                            ${classificationSummary(classifications)}
+                                        </span>
+                                    </span>
+                                `
+                                : html`<span class="mdc-list-item__primary-text">${value}</span>`
+                            }
+                        </li> 
+                    `)}
+                </ul>
+            `
+        }
+    </script>
+</body>
+</html>
